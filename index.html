@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phrase Hangman Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #121212;
+            color: #f0f0f0;
+        }
+        h1 {
+            color: #ff5722;
+            text-shadow: 3px 3px 0 #ff9800;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+        #game-container {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(255, 87, 34, 0.3);
+            margin-top: 20px;
+            border: 4px solid #ff5722;
+        }
+        #hangman-image {
+            max-width: 300px;
+            margin: 20px auto;
+            border: 3px solid #ff5722;
+            border-radius: 10px;
+        }
+        #phrase-display {
+            font-size: 2rem;
+            letter-spacing: 1px;
+            margin: 30px 0;
+            min-height: 60px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .letter-block {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 50px;
+            background-color: #333;
+            color: white;
+            border-radius: 5px;
+            margin: 0 2px;
+            font-weight: bold;
+            box-shadow: 0 3px 0 #222;
+        }
+        .space-block {
+            width: 30px;
+            background-color: transparent;
+        }
+        .punctuation-block {
+            background-color: #ff5722;
+            color: #121212;
+        }
+        #guesses-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+        }
+        .guess-column {
+            width: 45%;
+        }
+        .guess-title {
+            color: #ff9800;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        .guessed-letters {
+            min-height: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .guessed-letter {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+        .correct {
+            background-color: #4caf50;
+            color: white;
+        }
+        .incorrect {
+            background-color: #f44336;
+            color: white;
+        }
+        #message {
+            font-weight: bold;
+            margin: 20px 0;
+            min-height: 30px;
+            font-size: 1.2rem;
+            color: #ffeb3b;
+            text-shadow: 2px 2px 0 #ff9800;
+        }
+        #input-container {
+            margin-top: 30px;
+        }
+        #letter-input {
+            padding: 12px;
+            font-size: 1.5rem;
+            width: 60px;
+            text-align: center;
+            text-transform: uppercase;
+            font-family: 'Press Start 2P', cursive;
+            background-color: #333;
+            color: white;
+            border: 3px solid #ff5722;
+            border-radius: 8px;
+        }
+        button {
+            padding: 12px 25px;
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-family: 'Press Start 2P', cursive;
+            margin: 0 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 #c41c00;
+        }
+        button:hover {
+            background-color: #ff7043;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #c41c00;
+        }
+        button:disabled {
+            background-color: #666;
+            box-shadow: 0 4px 0 #444;
+            cursor: not-allowed;
+        }
+        .win-message {
+            color: #4caf50 !important;
+            text-shadow: 2px 2px 0 #2e7d32 !important;
+        }
+        .lose-message {
+            color: #f44336 !important;
+            text-shadow: 2px 2px 0 #c62828 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>PHRASE HANGMAN</h1>
+    <div id="game-container">
+        <img id="hangman-image" src="hangman0.jpg" alt="Hangman status">
+        <div id="phrase-display"></div>
+        
+        <div id="guesses-container">
+            <div class="guess-column">
+                <div class="guess-title">CORRECT GUESSES</div>
+                <div id="correct-guesses" class="guessed-letters"></div>
+            </div>
+            <div class="guess-column">
+                <div class="guess-title">INCORRECT GUESSES</div>
+                <div id="incorrect-guesses" class="guessed-letters"></div>
+            </div>
+        </div>
+        
+        <div id="message"></div>
+        
+        <div id="input-container">
+            <input type="text" id="letter-input" maxlength="1" placeholder="?">
+            <button id="guess-btn">GUESS</button>
+            <button id="new-game-btn">NEW GAME</button>
+        </div>
+    </div>
+
+    <script>
+        const phrases = [
+            "jack-in-the-box",
+            "one more time",
+            "can you fly?",
+            "Thank God It's Friday"
+        ];
+
+        let currentPhrase = '';
+        let correctLetters = [];
+        let incorrectLetters = [];
+        let wrongGuesses = 0;
+        let gameOver = false;
+        let displayPhrase = [];
+
+        const hangmanImage = document.getElementById('hangman-image');
+        const phraseDisplay = document.getElementById('phrase-display');
+        const correctGuessesDisplay = document.getElementById('correct-guesses');
+        const incorrectGuessesDisplay = document.getElementById('incorrect-guesses');
+        const messageDisplay = document.getElementById('message');
+        const letterInput = document.getElementById('letter-input');
+        const guessBtn = document.getElementById('guess-btn');
+        const newGameBtn = document.getElementById('new-game-btn');
+
+        function startNewGame() {
+            currentPhrase = phrases[Math.floor(Math.random() * phrases.length)].toUpperCase();
+            correctLetters = [];
+            incorrectLetters = [];
+            wrongGuesses = 0;
+            gameOver = false;
+            
+            // Initialize display phrase
+            displayPhrase = [];
+            for (let char of currentPhrase) {
+                if (/[A-Z]/.test(char)) {
+                    displayPhrase.push({char: '_', isLetter: true});
+                } else if (char === ' ') {
+                    displayPhrase.push({char: ' ', isLetter: false, isSpace: true});
+                } else {
+                    displayPhrase.push({char: char, isLetter: false, isPunctuation: true});
+                }
+            }
+            
+            updateDisplay();
+            messageDisplay.textContent = 'Guess a letter to start!';
+            messageDisplay.className = '';
+            letterInput.value = '';
+            letterInput.focus();
+        }
+
+        function updateDisplay() {
+            // Update hangman image
+            hangmanImage.src = `hangman${wrongGuesses}.png`;
+            
+            // Update phrase display with blocks
+            phraseDisplay.innerHTML = '';
+            for (let item of displayPhrase) {
+                const div = document.createElement('div');
+                if (item.isSpace) {
+                    div.className = 'space-block';
+                } else if (item.isPunctuation) {
+                    div.className = 'punctuation-block letter-block';
+                    div.textContent = item.char;
+                } else {
+                    div.className = 'letter-block';
+                    div.textContent = item.char;
+                }
+                phraseDisplay.appendChild(div);
+            }
+            
+            // Update guessed letters
+            correctGuessesDisplay.innerHTML = '';
+            correctLetters.forEach(letter => {
+                const span = document.createElement('span');
+                span.className = 'guessed-letter correct';
+                span.textContent = letter;
+                correctGuessesDisplay.appendChild(span);
+            });
+            
+            incorrectGuessesDisplay.innerHTML = '';
+            incorrectLetters.forEach(letter => {
+                const span = document.createElement('span');
+                span.className = 'guessed-letter incorrect';
+                span.textContent = letter;
+                incorrectGuessesDisplay.appendChild(span);
+            });
+            
+            // Check for win/lose conditions
+            if (!displayPhrase.some(item => item.isLetter && item.char === '_')) {
+                gameOver = true;
+                messageDisplay.textContent = 'YOU WIN!';
+                messageDisplay.classList.add('win-message');
+            } else if (wrongGuesses >= 6) {
+                gameOver = true;
+                messageDisplay.textContent = `GAME OVER! PHRASE: ${currentPhrase}`;
+                messageDisplay.classList.add('lose-message');
+            }
+        }
+
+        function makeGuess(letter) {
+            if (gameOver) return;
+            
+            letter = letter.toUpperCase();
+            
+            // Validate input
+            if (!/[A-Z]/.test(letter)) {
+                messageDisplay.textContent = 'ENTER A LETTER (A-Z)';
+                return;
+            }
+            
+            if (correctLetters.includes(letter) || incorrectLetters.includes(letter)) {
+                messageDisplay.textContent = 'ALREADY GUESSED!';
+                return;
+            }
+            
+            if (currentPhrase.includes(letter)) {
+                // Correct guess
+                correctLetters.push(letter);
+                messageDisplay.textContent = 'GOOD GUESS!';
+                
+                // Reveal all instances of the letter
+                for (let i = 0; i < currentPhrase.length; i++) {
+                    if (currentPhrase[i] === letter) {
+                        displayPhrase[i].char = letter;
+                    }
+                }
+            } else {
+                // Wrong guess
+                incorrectLetters.push(letter);
+                wrongGuesses++;
+                messageDisplay.textContent = 'WRONG GUESS!';
+            }
+            
+            updateDisplay();
+            letterInput.value = '';
+        }
+
+        // Event listeners
+        guessBtn.addEventListener('click', () => {
+            if (letterInput.value) {
+                makeGuess(letterInput.value);
+                letterInput.focus();
+            }
+        });
+        
+        newGameBtn.addEventListener('click', startNewGame);
+        
+        letterInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter' && letterInput.value) {
+                makeGuess(letterInput.value);
+            }
+        });
+        
+        // Only allow letters in input
+        letterInput.addEventListener('input', () => {
+            letterInput.value = letterInput.value.replace(/[^a-zA-Z]/g, '');
+        });
+
+        // Start the game when page loads
+        startNewGame();
+    </script>
+</body>
+</html>
